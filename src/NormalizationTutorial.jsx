@@ -6,13 +6,11 @@ import { useState } from "react";
  * Self-guided replacement for the live whiteboard walkthrough of
  * normalization (UNF -> 1NF -> 2NF -> 3NF) for MSE 245.
  *
- * Layout: four persistent columns (UNF | 1NF | 2NF | 3NF), as in the
- * course's worked examples. Columns fill left-to-right as the student
- * advances; earlier columns stay on screen so an attribute can be
- * traced across the normal forms. Only the active column is highlighted.
- *
- * Two modes:
- *   - "watch":    narrated walkthrough of the Order example.
+ * Three modes, read as one arc:
+ *   - "why":      break the flat Order table to feel the three
+ *                 anomalies normalization exists to remove.
+ *   - "watch":    narrated walkthrough of the Order example, with the
+ *                 four normal forms side by side, filling left-to-right.
  *   - "practice": the student transcript exercise, where the student
  *                 makes the decision for each column and gets feedback
  *                 tied to the three 3NF tests.
@@ -325,6 +323,33 @@ const threeNfTests = [
   "Do all of the non-key attributes depend directly upon the key?",
 ];
 
+// Flat (un-normalized) Order data for the "Why normalize?" mode.
+// Customer A101 repeats across three lines; order 12 is C234's only order
+// and the only place item P3 appears.
+const flatCols = [
+  { k: "ord", h: "Order_No" },
+  { k: "cno", h: "Customer_No" },
+  { k: "cname", h: "Customer_Name" },
+  { k: "date", h: "Order_Date" },
+  { k: "addr", h: "Delivery_Addr" },
+  { k: "ino", h: "Item_No" },
+  { k: "idesc", h: "Item_Desc" },
+  { k: "qty", h: "Qty" },
+];
+
+const flatRows = [
+  { ord: "10", cno: "A101", cname: "John Smith", date: "12/02/2010", addr: "12 Oak St", ino: "P1", idesc: "Widget", qty: "3" },
+  { ord: "10", cno: "A101", cname: "John Smith", date: "12/02/2010", addr: "12 Oak St", ino: "P2", idesc: "Gadget", qty: "1" },
+  { ord: "11", cno: "A101", cname: "John Smith", date: "23/04/2010", addr: "12 Oak St", ino: "P1", idesc: "Widget", qty: "5" },
+  { ord: "12", cno: "C234", cname: "Jill Brown", date: "15/05/2010", addr: "9 Elm Rd", ino: "P3", idesc: "Sprocket", qty: "2" },
+];
+
+const anomalies = [
+  { id: "update", label: "Update anomaly" },
+  { id: "insert", label: "Insertion anomaly" },
+  { id: "delete", label: "Deletion anomaly" },
+];
+
 /* ============================ STYLES ============================ */
 
 const css = `
@@ -346,7 +371,7 @@ const css = `
 .nz-sub{margin:0;color:var(--muted);font-size:14.5px;max-width:64ch;}
 
 .nz-modes{display:inline-flex;gap:4px;background:#eceaf1;border:1px solid var(--line);
-  border-radius:10px;padding:4px;margin:18px 0 8px;}
+  border-radius:10px;padding:4px;margin:18px 0 8px;flex-wrap:wrap;}
 .nz-mode{appearance:none;border:0;background:transparent;cursor:pointer;font:inherit;
   font-weight:600;font-size:13.5px;color:var(--muted);padding:7px 16px;border-radius:7px;}
 .nz-mode[aria-pressed="true"]{background:var(--paper);color:var(--plum-deep);box-shadow:0 1px 2px rgba(28,34,48,.08);}
@@ -398,12 +423,61 @@ const css = `
 .nz-legend u{text-underline-offset:3px;text-decoration-thickness:1.5px;}
 .nz-sw{width:12px;height:12px;display:inline-block;border-radius:2px;background:var(--gold-soft);box-shadow:inset 3px 0 0 var(--gold);}
 
+/* ---- flat data table (why mode) ---- */
+.nz-dwrap{overflow-x:auto;border:1px solid var(--line);border-radius:11px;}
+.nz-dtable{width:100%;border-collapse:collapse;font-size:12.5px;}
+.nz-dtable th{background:var(--plum);color:#fff;text-align:left;padding:7px 10px;font-weight:700;font-size:11.5px;white-space:nowrap;}
+.nz-dtable td{padding:6px 10px;border-bottom:1px solid var(--line);white-space:nowrap;background:#fff;}
+.nz-dtable tr:last-child td{border-bottom:0;}
+.nz-dtable tr.warn td{background:var(--gold-soft);}
+.nz-dtable tr.stale td{background:var(--no-soft);color:#8a2c38;font-weight:700;}
+.nz-dtable tr.danger td{background:var(--no-soft);color:#8a2c38;text-decoration:line-through;}
+.nz-dtable tr.ghost td{background:#f4f2f8;color:#9a93a8;font-style:italic;}
+.nz-dtable td.flag{background:var(--no-soft);color:var(--no);font-weight:800;font-style:normal;}
+
+.nz-anoms{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;}
+.nz-anom{appearance:none;cursor:pointer;font:inherit;font-weight:600;font-size:13px;
+  border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:8px 14px;border-radius:9px;transition:all .12s ease;}
+.nz-anom:hover{border-color:#c7c2d2;}
+.nz-anom.active{background:var(--plum);border-color:var(--plum);color:#fff;}
+
+.nz-fix{margin-top:14px;padding:11px 14px;border-radius:10px;font-size:13.5px;max-width:78ch;
+  background:var(--plum-soft);border:1px solid #e2d7e7;color:var(--plum-deep);}
+.nz-fix b{font-weight:700;}
+.nz-stacknote{margin:10px 0 0;font-size:12.5px;color:var(--muted);font-style:italic;max-width:78ch;}
+
+/* ---- source documents (UNF anchor) ---- */
+.nz-srcwrap{margin-top:16px;}
+.nz-srccard{border-left:3px solid #d7d3de;}
+.nz-srctag{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--muted);background:#edecf0;
+  border:1px solid var(--line);padding:3px 9px;border-radius:999px;}
+.nz-srclabel{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 8px;}
+.nz-repnote{font-size:11.5px;color:#7a5d12;background:var(--gold-soft);border:1px solid #ecdca6;
+  border-radius:7px;padding:5px 9px;display:inline-block;margin-top:10px;max-width:78ch;}
+.nz-doc-order{background:#efedf1;border:1px solid #d7d3de;border-radius:10px;padding:16px 18px;max-width:560px;}
+.nz-doc-title{font-size:16px;font-weight:700;margin-bottom:12px;}
+.nz-field{display:flex;align-items:flex-end;gap:8px;font-size:14px;margin:7px 0;}
+.nz-field .lbl{white-space:nowrap;}
+.nz-field .ln{flex:1;border-bottom:1px solid #9a96a3;min-width:50px;height:14px;}
+.nz-doctable{width:100%;border-collapse:collapse;margin-top:14px;}
+.nz-doctable th,.nz-doctable td{border:1px solid #8c8893;padding:6px 10px;font-size:13px;text-align:left;}
+.nz-doctable th{font-weight:700;}
+.nz-doctable tbody td{height:20px;}
+.nz-doc-tr{background:#fff;border:1px solid var(--line);border-radius:10px;padding:4px 18px 12px;max-width:640px;}
+.nz-doc-tr hr{border:0;border-top:2px solid var(--ink);margin:12px 0;}
+.nz-doc-tr .row{font-size:14px;margin:4px 0;}
+.nz-trtable{width:100%;border-collapse:collapse;}
+.nz-trtable th{text-align:left;font-weight:700;font-size:12.5px;padding:4px 8px;}
+.nz-trtable td{padding:4px 8px;font-size:13px;}
+.nz-trtable tbody.repeat td{background:var(--gold-soft);}
+
 /* ---- explanation / interaction panel ---- */
 .nz-explain{margin-top:18px;background:#fcfbfd;border:1px solid var(--line);border-radius:12px;padding:16px 18px;}
 .nz-stagehead{display:flex;align-items:baseline;flex-wrap:wrap;gap:10px;}
 .nz-stagetitle{font-size:16.5px;font-weight:800;margin:0;}
 .nz-jogger{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--plum-deep);background:var(--plum-soft);border:1px solid #e2d7e7;padding:3px 9px;border-radius:999px;}
 .nz-why{color:var(--muted);font-size:14px;margin:8px 0 0;max-width:78ch;}
+.nz-why b{color:var(--ink);font-weight:600;}
 
 .nz-qprompt{font-size:14.5px;font-weight:600;margin:10px 0 12px;max-width:76ch;}
 .nz-opts{display:flex;flex-wrap:wrap;gap:8px;}
@@ -440,8 +514,17 @@ const css = `
 .nz-btn.primary:hover:not(:disabled){background:var(--plum-deep);border-color:var(--plum-deep);}
 .nz-btn.ghost{border-color:transparent;color:var(--muted);}
 .nz-btn.ghost:hover:not(:disabled){color:var(--ink);}
+.nz-btn.cta{background:var(--plum);border-color:var(--plum);color:#fff;font-size:15px;font-weight:700;
+  padding:11px 26px;box-shadow:0 4px 14px rgba(107,78,113,.38);animation:nz-cta-pulse 2.4s ease-in-out infinite;}
+.nz-btn.cta:hover:not(:disabled){background:var(--plum-deep);border-color:var(--plum-deep);
+  box-shadow:0 6px 18px rgba(107,78,113,.5);animation:none;}
+.nz-btn.cta:disabled{box-shadow:none;animation:none;}
+@keyframes nz-cta-pulse{0%,100%{box-shadow:0 4px 14px rgba(107,78,113,.38);}50%{box-shadow:0 4px 20px rgba(107,78,113,.62);}}
 
-@media (prefers-reduced-motion:reduce){.nz-colhead,.nz-card,.nz-btn,.nz-opt{transition:none;}}
+@media (prefers-reduced-motion:reduce){
+  .nz-colhead,.nz-card,.nz-btn,.nz-opt,.nz-anom{transition:none;}
+  .nz-btn.cta{animation:none;}
+}
 `;
 
 /* ============================ PIECES ============================ */
@@ -548,6 +631,279 @@ function FinalChecklist({ nextLabel }) {
   );
 }
 
+function SourceDoc({ kind }) {
+  return (
+    <div className="nz-explain nz-srccard">
+      <div className="nz-stagehead">
+        <h3 className="nz-stagetitle">Source document</h3>
+        <span className="nz-srctag">reference</span>
+      </div>
+      {kind === "order" ? (
+        <>
+          <div className="nz-doc-order">
+            <div className="nz-doc-title">Sales Order Document</div>
+            {["Order No", "Customer No", "Customer Name", "Date of Order", "Delivery Address"].map(
+              (l) => (
+                <div className="nz-field" key={l}>
+                  <span className="lbl">{l}:</span>
+                  <span className="ln" />
+                </div>
+              )
+            )}
+            <table className="nz-doctable">
+              <thead>
+                <tr>
+                  <th>Item No</th>
+                  <th>Item Description</th>
+                  <th>Quantity</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[0, 1, 2].map((i) => (
+                  <tr key={i}>
+                    <td>{"\u00a0"}</td>
+                    <td>{"\u00a0"}</td>
+                    <td>{"\u00a0"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <span className="nz-repnote">
+            Every attribute on this form was read into the UNF list. The Item table repeats per order
+            {"\u00a0"}{"\u2014"} that became the repeating group at 1NF.
+          </span>
+        </>
+      ) : (
+        <>
+          <div className="nz-doc-tr">
+            <hr />
+            <div className="row">Student ID: 12121212</div>
+            <div className="row">Student Name: Ann Taylor</div>
+            <div className="row">Program Code: CompEng</div>
+            <div className="row">Program Name: Honours Co-op in Computer Engineering</div>
+            <hr />
+            <table className="nz-trtable">
+              <thead>
+                <tr>
+                  <th>Course Number</th>
+                  <th>Course Name</th>
+                  <th>Number of Credits</th>
+                  <th>Grade</th>
+                </tr>
+              </thead>
+              <tbody className="repeat">
+                <tr>
+                  <td>CS123</td>
+                  <td>Databases</td>
+                  <td>0.5</td>
+                  <td>87</td>
+                </tr>
+                <tr>
+                  <td>CS235</td>
+                  <td>Software Engineering</td>
+                  <td>0.5</td>
+                  <td>82</td>
+                </tr>
+                <tr>
+                  <td>CS345</td>
+                  <td>HCI</td>
+                  <td>0.5</td>
+                  <td>85</td>
+                </tr>
+              </tbody>
+            </table>
+            <hr />
+          </div>
+          <span className="nz-repnote">
+            Every attribute here was read into the UNF list. The highlighted course rows repeat per
+            student {"\u2014"} that became the repeating group at 1NF.
+          </span>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ==================== WHY MODE (anomalies) ==================== */
+
+function AnomExplain({ active, applied, onApply, onReset }) {
+  if (active === "update") {
+    return (
+      <div className="nz-explain">
+        <div className="nz-stagehead">
+          <h3 className="nz-stagetitle">Update anomaly</h3>
+          <span className="nz-jogger">Redundancy</span>
+        </div>
+        <p className="nz-why">
+          Customer <b>A101</b> is stored on three separate lines, so his name and delivery address
+          are duplicated. Change his name and you have to edit every copy.
+        </p>
+        {!applied ? (
+          <button className="nz-btn" style={{ marginTop: 12 }} onClick={onApply}>
+            Rename A101 to {"\u201c"}John Smyth{"\u201d"} {"\u2014"} but miss one row
+          </button>
+        ) : (
+          <>
+            <div className="nz-feedback no">
+              One row still says {"\u201c"}John Smith{"\u201d"}. The database now claims A101 is two
+              different people {"\u2014"} the data contradicts itself.
+            </div>
+            <button className="nz-btn ghost" style={{ marginTop: 10 }} onClick={onReset}>
+              Reset
+            </button>
+          </>
+        )}
+        <div className="nz-fix">
+          In 3NF the name lives in one row of the <b>Customer</b> table, so a rename touches one
+          place and can{"\u2019"}t go half-done.
+        </div>
+        <p className="nz-stacknote">
+          In a real app: if an update writes the new name to some order rows but not all, your reads
+          start disagreeing with each other.
+        </p>
+      </div>
+    );
+  }
+  if (active === "insert") {
+    return (
+      <div className="nz-explain">
+        <div className="nz-stagehead">
+          <h3 className="nz-stagetitle">Insertion anomaly</h3>
+          <span className="nz-jogger">Can{"\u2019"}t store</span>
+        </div>
+        <p className="nz-why">
+          You want to add a new product, {"\u201c"}Flange{"\u201d"} (P4), to the catalogue {"\u2014"}{" "}
+          but no one has ordered it yet. Every row here needs an Order_No, and Order_No is part of
+          the primary key.
+        </p>
+        <div className="nz-fix">
+          A key attribute can{"\u2019"}t be null (the <b>entity integrity rule</b>), so there{"\u2019"}s
+          nowhere to record an unordered item. In 3NF the <b>Item</b> table stands on its own {"\u2014"}{" "}
+          you can add a product before any order exists.
+        </div>
+        <p className="nz-stacknote">
+          In a real app: you couldn{"\u2019"}t list a product on the store page until someone bought it
+          {"\u2014"} backwards.
+        </p>
+      </div>
+    );
+  }
+  // delete
+  return (
+    <div className="nz-explain">
+      <div className="nz-stagehead">
+        <h3 className="nz-stagetitle">Deletion anomaly</h3>
+        <span className="nz-jogger">Lost data</span>
+      </div>
+      <p className="nz-why">
+        Delete order <b>12</b> {"\u2014"} Jill Brown{"\u2019"}s only order. Those rows are the only place
+        customer C234 and the item {"\u201c"}Sprocket{"\u201d"} (P3) appear, so deleting the order erases
+        the customer and the product along with it.
+      </p>
+      <div className="nz-fix">
+        In 3NF, <b>Customer</b> and <b>Item</b> are separate tables, so removing an order leaves them
+        intact.
+      </div>
+      <p className="nz-stacknote">
+        In a real app: cancelling an order shouldn{"\u2019"}t wipe the customer{"\u2019"}s account or pull a
+        product from your catalogue.
+      </p>
+    </div>
+  );
+}
+
+function WhyMode({ onNext }) {
+  const [active, setActive] = useState(null);
+  const [applied, setApplied] = useState(false);
+
+  const a101 = flatRows.map((r, i) => (r.cno === "A101" ? i : -1)).filter((i) => i >= 0);
+  const lastA101 = a101[a101.length - 1];
+
+  const selectAnom = (id) => {
+    setActive(id === active ? null : id);
+    setApplied(false);
+  };
+  const rowClass = (r, i) => {
+    if (active === "update") return r.cno === "A101" ? (applied && i === lastA101 ? "stale" : "warn") : "";
+    if (active === "delete") return r.ord === "12" ? "danger" : "";
+    return "";
+  };
+  const nameFor = (r, i) =>
+    active === "update" && applied && r.cno === "A101" && i !== lastA101 ? "John Smyth" : r.cname;
+
+  return (
+    <div className="nz-panel">
+      <p className="nz-why" style={{ marginTop: 0 }}>
+        Here{"\u2019"}s the Sales Order data <b>before</b> normalization. Customer and item facts are
+        copied across rows {"\u2014"} notice John Smith repeated on three lines. Trigger each anomaly to
+        see what breaks; these three problems are exactly what UNF {"\u2192"} 3NF removes.
+      </p>
+
+      <div className="nz-dwrap" style={{ marginTop: 14 }}>
+        <table className="nz-dtable nz-mono">
+          <thead>
+            <tr>
+              {flatCols.map((c) => (
+                <th key={c.k}>{c.h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {flatRows.map((r, i) => (
+              <tr key={i} className={rowClass(r, i)}>
+                {flatCols.map((c) => (
+                  <td key={c.k}>{c.k === "cname" ? nameFor(r, i) : r[c.k]}</td>
+                ))}
+              </tr>
+            ))}
+            {active === "insert" && (
+              <tr className="ghost">
+                <td className="flag">null?</td>
+                <td>{"\u2014"}</td>
+                <td>{"\u2014"}</td>
+                <td>{"\u2014"}</td>
+                <td>{"\u2014"}</td>
+                <td>P4</td>
+                <td>Flange</td>
+                <td>{"\u2014"}</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="nz-anoms">
+        {anomalies.map((a) => (
+          <button
+            key={a.id}
+            className={`nz-anom${active === a.id ? " active" : ""}`}
+            onClick={() => selectAnom(a.id)}
+          >
+            {a.label}
+          </button>
+        ))}
+      </div>
+
+      {active && (
+        <AnomExplain
+          active={active}
+          applied={applied}
+          onApply={() => setApplied(true)}
+          onReset={() => setApplied(false)}
+        />
+      )}
+
+      <div className="nz-nav">
+        <span />
+        <button className="nz-btn cta" onClick={onNext}>
+          See how it{"\u2019"}s fixed {"\u2192"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ===================== WATCH MODE (Order) ===================== */
 
 function WatchMode() {
@@ -574,22 +930,12 @@ function WatchMode() {
     <div className="nz-panel">
       <ColumnGrid stages={stages} colState={colState} onJump={jump} />
       <Legend />
-      <div className="nz-explain">
-        <div className="nz-stagehead">
-          <h3 className="nz-stagetitle">{s.title}</h3>
-          {s.jogger && <span className="nz-jogger">{s.jogger}</span>}
-        </div>
-        <p className="nz-why">{s.why}</p>
-        {last && (
-          <FinalChecklist nextLabel="link the four tables on their shared keys, drop redundant links, then add cardinalities and optionalities to build the ER diagram \u2014 the procedure in the worked Order example." />
-        )}
-      </div>
       <div className="nz-nav">
         <button className="nz-btn ghost" disabled={step === 0} onClick={() => jump(step - 1)}>
           {"\u2190"} Back
         </button>
         {!last ? (
-          <button className="nz-btn primary" onClick={next}>
+          <button className="nz-btn cta" onClick={next}>
             {step < maxReached ? "Next" : `Apply ${stages[step + 1].key}`} {"\u2192"}
           </button>
         ) : (
@@ -604,6 +950,17 @@ function WatchMode() {
           </button>
         )}
       </div>
+      <div className="nz-explain">
+        <div className="nz-stagehead">
+          <h3 className="nz-stagetitle">{s.title}</h3>
+          {s.jogger && <span className="nz-jogger">{s.jogger}</span>}
+        </div>
+        <p className="nz-why">{s.why}</p>
+        {last && (
+          <FinalChecklist nextLabel="link the four tables on their shared keys, drop redundant links, then add cardinalities and optionalities to build the ER diagram \u2014 the procedure in the worked Order example." />
+        )}
+      </div>
+      <SourceDoc kind="order" />
     </div>
   );
 }
@@ -677,35 +1034,25 @@ function PracticeMode() {
     <div className="nz-panel">
       <ColumnGrid stages={stages} colState={colState} onJump={jump} />
       <Legend />
-      <div className="nz-explain">
-        <div className="nz-stagehead">
-          <h3 className="nz-stagetitle">{s.title}</h3>
-          {s.jogger && <span className="nz-jogger">{s.jogger}</span>}
-        </div>
 
-        {isAsking ? (
-          <>
-            <p className="nz-qprompt">{q.prompt}</p>
-            <div className="nz-opts">
-              {q.options.map((opt) => (
-                <label key={opt} className={optClass(opt)}>
-                  <input type="checkbox" checked={sel.includes(opt)} onChange={() => toggle(opt)} />
-                  {opt}
-                </label>
-              ))}
-            </div>
-            {result === "no" && <div className="nz-feedback no">{q.wrong}</div>}
-          </>
-        ) : (
-          <>
-            {solved[cur] && q && <div className="nz-feedback ok">{q.correct}</div>}
-            <p className="nz-why">{s.why}</p>
-            {cur === lastIdx && solved[cur] && (
-              <FinalChecklist nextLabel="compare these four tables against your intuitive entity model, then build the ER diagram by linking shared keys and adding cardinalities." />
-            )}
-          </>
-        )}
-      </div>
+      {isAsking && (
+        <div className="nz-explain">
+          <div className="nz-stagehead">
+            <h3 className="nz-stagetitle">{s.title}</h3>
+            {s.jogger && <span className="nz-jogger">{s.jogger}</span>}
+          </div>
+          <p className="nz-qprompt">{q.prompt}</p>
+          <div className="nz-opts">
+            {q.options.map((opt) => (
+              <label key={opt} className={optClass(opt)}>
+                <input type="checkbox" checked={sel.includes(opt)} onChange={() => toggle(opt)} />
+                {opt}
+              </label>
+            ))}
+          </div>
+          {result === "no" && <div className="nz-feedback no">{q.wrong}</div>}
+        </div>
+      )}
 
       <div className="nz-nav">
         <button className="nz-btn ghost" disabled={cur === 0} onClick={() => jump(cur - 1)}>
@@ -717,7 +1064,7 @@ function PracticeMode() {
               <button className="nz-btn ghost" onClick={reveal}>
                 Show answer
               </button>
-              <button className="nz-btn primary" disabled={sel.length === 0} onClick={check}>
+              <button className="nz-btn cta" disabled={sel.length === 0} onClick={check}>
                 Check
               </button>
             </>
@@ -734,20 +1081,54 @@ function PracticeMode() {
               {"\u21ba"} Start over
             </button>
           ) : (
-            <button className="nz-btn primary" onClick={() => setCur(cur + 1)}>
+            <button className="nz-btn cta" onClick={() => setCur(cur + 1)}>
               {cur === 0 ? "Start" : "Continue"} {"\u2192"}
             </button>
           )}
         </div>
       </div>
+
+      {!isAsking && (
+        <div className="nz-explain">
+          <div className="nz-stagehead">
+            <h3 className="nz-stagetitle">{s.title}</h3>
+            {s.jogger && <span className="nz-jogger">{s.jogger}</span>}
+          </div>
+          {solved[cur] && q && (
+            <div className="nz-feedback ok" style={{ marginTop: 12 }}>
+              {q.correct}
+            </div>
+          )}
+          <p className="nz-why">{s.why}</p>
+          {cur === lastIdx && solved[cur] && (
+            <FinalChecklist nextLabel="compare these four tables against your intuitive entity model, then build the ER diagram by linking shared keys and adding cardinalities." />
+          )}
+        </div>
+      )}
+
+      <SourceDoc kind="transcript" />
     </div>
   );
 }
 
 /* ============================ ROOT ============================ */
 
+const MODES = [
+  { id: "why", label: "Why normalize?" },
+  { id: "watch", label: "Watch the process" },
+  { id: "practice", label: "Try it yourself" },
+];
+
+const MODE_NOTE = {
+  why: "The Sales Order data before normalization. Trigger each anomaly to see what breaks \u2014 the problems normalization exists to fix.",
+  watch:
+    "Worked example: a Sales Order document. Step right through each column and read why each attribute moves.",
+  practice:
+    "Exercise: the student transcript document. Make the call for each column \u2014 it unlocks once you get it right (or hit \u201cShow answer\u201d).",
+};
+
 export default function NormalizationTutorial() {
-  const [mode, setMode] = useState("watch");
+  const [mode, setMode] = useState("why");
 
   return (
     <div className="nz-root">
@@ -757,35 +1138,28 @@ export default function NormalizationTutorial() {
           <p className="nz-eyebrow">MSE 245 Relational model</p>
           <h1 className="nz-title">Normalization: from UNF to 3NF</h1>
           <p className="nz-sub">
-            Watch a
-            worked example fill in column by column, then drive the transcript exercise to 3NF
-            yourself.
+            See why normalization matters, then watch a worked example fill in column by column and
+            drive the transcript exercise to 3NF yourself.
           </p>
         </header>
 
         <div className="nz-modes" role="group" aria-label="Choose a mode">
-          <button
-            className="nz-mode"
-            aria-pressed={mode === "watch"}
-            onClick={() => setMode("watch")}
-          >
-            Watch the process
-          </button>
-          <button
-            className="nz-mode"
-            aria-pressed={mode === "practice"}
-            onClick={() => setMode("practice")}
-          >
-            Try it yourself
-          </button>
+          {MODES.map((m) => (
+            <button
+              key={m.id}
+              className="nz-mode"
+              aria-pressed={mode === m.id}
+              onClick={() => setMode(m.id)}
+            >
+              {m.label}
+            </button>
+          ))}
         </div>
-        <p className="nz-mode-note">
-          {mode === "watch"
-            ? "Worked example: a Sales Order document. Step right through each column and read why each attribute moves."
-            : "Exercise: the student transcript document. Make the call for each column \u2014 it unlocks once you get it right (or hit \u201cShow answer\u201d)."}
-        </p>
+        <p className="nz-mode-note">{MODE_NOTE[mode]}</p>
 
-        {mode === "watch" ? <WatchMode /> : <PracticeMode />}
+        {mode === "why" && <WhyMode onNext={() => setMode("watch")} />}
+        {mode === "watch" && <WatchMode />}
+        {mode === "practice" && <PracticeMode />}
       </div>
     </div>
   );
