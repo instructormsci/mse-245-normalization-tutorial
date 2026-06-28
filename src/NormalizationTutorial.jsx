@@ -1257,7 +1257,7 @@ function ErLinks({ showNotation }) {
           <line x1="438" y1="347" x2="455" y2="363" />
           <circle cx="132.5" cy="274" r="4" fill="#fff" />
           <circle cx="547.5" cy="274" r="4" fill="#fff" />
-          <circle cx="446" cy="347" r="4" fill="#fff" />
+          <circle cx="429" cy="347" r="4" fill="#fff" />
         </>
       )}
     </g>
