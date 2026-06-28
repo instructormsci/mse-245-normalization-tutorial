@@ -416,7 +416,7 @@ const erStages = [
   {
     key: "3. Crow's foot",
     title: "Add cardinalities, optionalities and names",
-    why: "Rule 3: where an attribute is a simple primary key in one entity and a foreign key (or part of a composite key) in the other, the first sits at the 'one' end and the second at the 'many' end. So Customer is one-to-many with Order, Order is one-to-many with OrderItem, and Item is one-to-many with OrderItem. The single bar marks the 'one' end, the crow's foot marks the 'many' end, and the small circle shows optional participation. Last, name each relationship. Now compare this against your intuitive ER diagram and run the three 3NF tests once more.",
+    why: "Rule 3: where an attribute is a simple primary key in one entity and a foreign key (or part of a composite key) in the other, the first sits at the 'one' end and the second at the 'many' end. So Customer is one-to-many with Order, Order is one-to-many with OrderItem, and Item is one-to-many with OrderItem. The single bar marks the 'one' end and the crow's foot marks the 'many' end. A circle next to the foot means participation is optional (zero is allowed), while a bar there means it is mandatory (at least one): an order, for example, must contain at least one OrderItem, so that end carries a bar rather than a circle. Last, name each relationship. Now compare this against your intuitive ER diagram and run the three 3NF tests once more.",
     showLinks: true,
     showNotation: true,
     highlightShared: false,
@@ -1257,7 +1257,7 @@ function ErLinks({ showNotation }) {
           <line x1="438" y1="347" x2="455" y2="363" />
           <circle cx="132.5" cy="274" r="4" fill="#fff" />
           <circle cx="547.5" cy="274" r="4" fill="#fff" />
-          <circle cx="429" cy="347" r="4" fill="#fff" />
+          <line x1="429" y1="339" x2="429" y2="355" />
         </>
       )}
     </g>
@@ -1322,7 +1322,7 @@ function ErMode() {
 
       {s.showNotation && (
         <div className="nz-erlegend">
-          <span>Bar = one</span>
+          <span>Bar = one or mandatory</span>
           <span>Crow{"\u2019"}s foot = many</span>
           <span>Circle = optional</span>
         </div>
