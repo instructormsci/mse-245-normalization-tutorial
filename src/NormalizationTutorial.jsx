@@ -30,7 +30,7 @@ const orderStages = [
     key: "UNF",
     title: "Un-normalized form (UNF)",
     jogger: null,
-    why: "Start with every attribute from the Sales Order document in one list. Order_No identifies an order, but the document records many lines per order \u2014 so Item_No, Item_Desc and Qty repeat. That repetition is what the three rules will remove.",
+    why: "Start with every attribute from the Sales Order document in one list. Order_No identifies an order, but the document records many lines per order - so Item_No, Item_Desc and Qty repeat. That repetition is what the three rules will remove.",
     focus: [],
     newIds: [],
     tables: [
@@ -82,7 +82,7 @@ const orderStages = [
     key: "2NF",
     title: "Second normal form (2NF)",
     jogger: "Part-key dependencies",
-    why: "In the line table the key is (Order_No, Item_No). Item_Desc depends on Item_No alone \u2014 only part of the key \u2014 so it moves out into its own Item table. The order table has a single-attribute key, so it cannot have a part-key dependency and is left unchanged.",
+    why: "In the line table the key is (Order_No, Item_No). Item_Desc depends on Item_No alone - only part of the key - so it moves out into its own Item table. The order table has a single-attribute key, so it cannot have a part-key dependency and is left unchanged.",
     focus: ["Item_Desc"],
     newIds: ["item"],
     tables: [
@@ -111,7 +111,7 @@ const orderStages = [
     key: "3NF",
     title: "Third normal form (3NF)",
     jogger: "Non-key dependencies",
-    why: "In the order table, Customer_Name and Delivery_Addr depend on Customer_No \u2014 a non-key attribute \u2014 not directly on Order_No. They move into a Customer table (assuming one delivery address per customer). Customer_No stays behind as a foreign key. Now every non-key attribute depends on the key, the whole key, and nothing but the key.",
+    why: "In the order table, Customer_Name and Delivery_Addr depend on Customer_No - a non-key attribute - not directly on Order_No. They move into a Customer table (assuming one delivery address per customer). Customer_No stays behind as a foreign key. Now every non-key attribute depends on the key, the whole key, and nothing but the key.",
     focus: ["Customer_No", "Customer_Name", "Delivery_Addr"],
     newIds: ["customer"],
     tables: [
@@ -152,7 +152,7 @@ const transcriptStages = [
     key: "UNF",
     title: "Un-normalized form (UNF)",
     jogger: null,
-    why: "Every attribute from the transcript document, in one list. One student can take many courses, so the course attributes repeat. Your job is to drive this to 3NF one rule at a time \u2014 each column unlocks when you make the right call.",
+    why: "Every attribute from the transcript document, in one list. One student can take many courses, so the course attributes repeat. Your job is to drive this to 3NF one rule at a time - each column unlocks when you make the right call.",
     focus: [],
     newIds: [],
     tables: [
@@ -177,7 +177,7 @@ const transcriptStages = [
     jogger: "Repeating groups",
     question: {
       prompt:
-        "Which attributes form the repeating group \u2014 the ones that occur more than once for a single student?",
+        "Which attributes form the repeating group - the ones that occur more than once for a single student?",
       options: [
         "StudentName",
         "ProgramCode",
@@ -189,7 +189,7 @@ const transcriptStages = [
       ],
       answer: ["CourseNumber", "CourseName", "NumCredits", "Grade"],
       correct:
-        "Right. A student has many courses, so CourseNumber, CourseName, NumCredits and Grade repeat. They become their own table, keyed by the compound (Student_ID, CourseNumber) \u2014 you need both to identify one enrolment.",
+        "Right. A student has many courses, so CourseNumber, CourseName, NumCredits and Grade repeat. They become their own table, keyed by the compound (Student_ID, CourseNumber) - you need both to identify one enrolment.",
       wrong:
         "Not quite. For one Student_ID, which attributes can have several values? The name and program appear once; the course rows repeat. The repeating group is CourseNumber, CourseName, NumCredits and Grade.",
     },
@@ -228,9 +228,9 @@ const transcriptStages = [
       options: ["CourseName", "NumCredits", "Grade"],
       answer: ["CourseName", "NumCredits"],
       correct:
-        "Correct. CourseName and NumCredits are properties of the course itself \u2014 they depend on CourseNumber alone, not on which student took it. They move to a Course table. Grade depends on both student and course, so it stays.",
+        "Correct. CourseName and NumCredits are properties of the course itself - they depend on CourseNumber alone, not on which student took it. They move to a Course table. Grade depends on both student and course, so it stays.",
       wrong:
-        "Re-check each one: does it change if a different student takes the same course? CourseName and NumCredits don't \u2014 they hang off CourseNumber only. Grade does change per student, so it depends on the whole key and stays put.",
+        "Re-check each one: does it change if a different student takes the same course? CourseName and NumCredits don't - they hang off CourseNumber only. Grade does change per student, so it depends on the whole key and stays put.",
     },
     why: "CourseName and NumCredits depend on CourseNumber alone, so they split into a Course table. Grade depends on the whole key and remains in the enrolment table. The student table has a single-attribute key and is unchanged.",
     focus: ["CourseName", "NumCredits"],
@@ -273,9 +273,9 @@ const transcriptStages = [
       options: ["StudentName", "ProgramCode", "ProgramName"],
       answer: ["ProgramName"],
       correct:
-        "Exactly. ProgramName depends on ProgramCode, which is itself a non-key attribute \u2014 not directly on Student_ID. It moves to a Program table; ProgramCode stays behind as a foreign key. The model is now in 3NF.",
+        "Exactly. ProgramName depends on ProgramCode, which is itself a non-key attribute - not directly on Student_ID. It moves to a Program table; ProgramCode stays behind as a foreign key. The model is now in 3NF.",
       wrong:
-        "Look for an attribute determined by another non-key attribute rather than by Student_ID. ProgramName is fixed once you know ProgramCode, so it depends on ProgramCode \u2014 a transitive dependency. That's the one to separate.",
+        "Look for an attribute determined by another non-key attribute rather than by Student_ID. ProgramName is fixed once you know ProgramCode, so it depends on ProgramCode - a transitive dependency. That's the one to separate.",
     },
     why: "ProgramName depends on ProgramCode (a non-key attribute), so it splits into a Program table, leaving ProgramCode behind as a foreign key. Every non-key attribute now depends on the key, the whole key, and nothing but the key.",
     focus: ["ProgramCode", "ProgramName"],
@@ -348,6 +348,79 @@ const anomalies = [
   { id: "update", label: "Update anomaly" },
   { id: "insert", label: "Insertion anomaly" },
   { id: "delete", label: "Deletion anomaly" },
+];
+
+// ER diagram from the 3NF Order tables. Boxes are positioned so the two
+// vertical links share an x and the bottom link is horizontal, matching
+// the worked example's layout. Shared keys drive the relationships.
+const erBoxes = [
+  {
+    id: "customer",
+    x: 40,
+    y: 24,
+    w: 185,
+    title: "Customer",
+    attrs: [{ t: "Customer_No", pk: true, shared: true }, { t: "Customer_Name" }, { t: "Delivery_Addr" }],
+  },
+  {
+    id: "item",
+    x: 455,
+    y: 24,
+    w: 185,
+    title: "Item",
+    attrs: [{ t: "Item_No", pk: true, shared: true }, { t: "Item_Desc" }],
+  },
+  {
+    id: "order",
+    x: 40,
+    y: 300,
+    w: 185,
+    title: "Order",
+    attrs: [
+      { t: "Order_No", pk: true, shared: true },
+      { t: "Customer_No", fk: true, shared: true },
+      { t: "Order_Date" },
+    ],
+  },
+  {
+    id: "orderitem",
+    x: 455,
+    y: 300,
+    w: 185,
+    title: "OrderItem",
+    attrs: [
+      { t: "Order_No", pk: true, fk: true, shared: true },
+      { t: "Item_No", pk: true, fk: true, shared: true },
+      { t: "Qty" },
+    ],
+  },
+];
+
+const erStages = [
+  {
+    key: "1. Tables",
+    title: "Start from the four 3NF tables",
+    why: "Normalization produced four tables: Customer, Order, OrderItem and Item. Each one becomes an entity. The remaining steps turn the keys they share into relationships.",
+    showLinks: false,
+    showNotation: false,
+    highlightShared: false,
+  },
+  {
+    key: "2. Links",
+    title: "Link entities that share a key",
+    why: "Rule 1: join any two entities that share an attribute, whether it is a primary or foreign key. Customer and Order share Customer_No, Order and OrderItem share Order_No, and Item and OrderItem share Item_No. Rule 2 says to remove any redundant link (where A to C means the same as A to B to C), but this model has none. The shared keys are highlighted.",
+    showLinks: true,
+    showNotation: false,
+    highlightShared: true,
+  },
+  {
+    key: "3. Crow's foot",
+    title: "Add cardinalities, optionalities and names",
+    why: "Rule 3: where an attribute is a simple primary key in one entity and a foreign key (or part of a composite key) in the other, the first sits at the 'one' end and the second at the 'many' end. So Customer is one-to-many with Order, Order is one-to-many with OrderItem, and Item is one-to-many with OrderItem. The single bar marks the 'one' end, the crow's foot marks the 'many' end, and the small circle shows optional participation. Last, name each relationship. Now compare this against your intuitive ER diagram and run the three 3NF tests once more.",
+    showLinks: true,
+    showNotation: true,
+    highlightShared: false,
+  },
 ];
 
 /* ============================ STYLES ============================ */
@@ -521,6 +594,18 @@ const css = `
 .nz-btn.cta:disabled{box-shadow:none;animation:none;}
 @keyframes nz-cta-pulse{0%,100%{box-shadow:0 4px 14px rgba(107,78,113,.38);}50%{box-shadow:0 4px 20px rgba(107,78,113,.62);}}
 
+/* ---- ER diagram mode ---- */
+.nz-ersteps{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+.nz-erchip{appearance:none;cursor:pointer;font:inherit;font-weight:700;font-size:12.5px;
+  border:1px solid var(--line);background:var(--paper);color:var(--muted);padding:7px 13px;border-radius:999px;transition:all .15s ease;}
+.nz-erchip:disabled{cursor:default;opacity:.5;}
+.nz-erchip.done{color:var(--plum);background:var(--plum-soft);border-color:#d8cee0;}
+.nz-erchip.active{background:var(--plum);border-color:var(--plum);color:#fff;box-shadow:0 2px 8px rgba(107,78,113,.3);}
+.nz-erwrap{border:1px solid var(--line);border-radius:12px;background:#fcfbfd;padding:14px;overflow-x:auto;}
+.nz-erwrap svg{display:block;width:100%;height:auto;max-width:680px;margin:0 auto;}
+.nz-erlegend{display:flex;flex-wrap:wrap;gap:16px;margin-top:14px;color:var(--muted);font-size:12.5px;}
+.nz-erlegend span{display:inline-flex;align-items:center;gap:7px;}
+
 @media (prefers-reduced-motion:reduce){
   .nz-colhead,.nz-card,.nz-btn,.nz-opt,.nz-anom{transition:none;}
   .nz-btn.cta{animation:none;}
@@ -671,7 +756,7 @@ function SourceDoc({ kind }) {
           </div>
           <span className="nz-repnote">
             Every attribute on this form was read into the UNF list. The Item table repeats per order
-            {"\u00a0"}{"\u2014"} that became the repeating group at 1NF.
+            {"\u00a0"}{"-"} that became the repeating group at 1NF.
           </span>
         </>
       ) : (
@@ -717,7 +802,7 @@ function SourceDoc({ kind }) {
           </div>
           <span className="nz-repnote">
             Every attribute here was read into the UNF list. The highlighted course rows repeat per
-            student {"\u2014"} that became the repeating group at 1NF.
+            student {"-"} that became the repeating group at 1NF.
           </span>
         </>
       )}
@@ -741,13 +826,13 @@ function AnomExplain({ active, applied, onApply, onReset }) {
         </p>
         {!applied ? (
           <button className="nz-btn" style={{ marginTop: 12 }} onClick={onApply}>
-            Rename A101 to {"\u201c"}John Smyth{"\u201d"} {"\u2014"} but miss one row
+            Rename A101 to {"\u201c"}John Smyth{"\u201d"} {"-"} but miss one row
           </button>
         ) : (
           <>
             <div className="nz-feedback no">
               One row still says {"\u201c"}John Smith{"\u201d"}. The database now claims A101 is two
-              different people {"\u2014"} the data contradicts itself.
+              different people {"-"} the data contradicts itself.
             </div>
             <button className="nz-btn ghost" style={{ marginTop: 10 }} onClick={onReset}>
               Reset
@@ -773,18 +858,18 @@ function AnomExplain({ active, applied, onApply, onReset }) {
           <span className="nz-jogger">Can{"\u2019"}t store</span>
         </div>
         <p className="nz-why">
-          You want to add a new product, {"\u201c"}Flange{"\u201d"} (P4), to the catalogue {"\u2014"}{" "}
+          You want to add a new product, {"\u201c"}Flange{"\u201d"} (P4), to the catalogue {"-"}{" "}
           but no one has ordered it yet. Every row here needs an Order_No, and Order_No is part of
           the primary key.
         </p>
         <div className="nz-fix">
           A key attribute can{"\u2019"}t be null (the <b>entity integrity rule</b>), so there{"\u2019"}s
-          nowhere to record an unordered item. In 3NF the <b>Item</b> table stands on its own {"\u2014"}{" "}
+          nowhere to record an unordered item. In 3NF the <b>Item</b> table stands on its own {"-"}{" "}
           you can add a product before any order exists.
         </div>
         <p className="nz-stacknote">
           In a real app: you couldn{"\u2019"}t list a product on the store page until someone bought it
-          {"\u2014"} backwards.
+          {"-"} backwards.
         </p>
       </div>
     );
@@ -797,7 +882,7 @@ function AnomExplain({ active, applied, onApply, onReset }) {
         <span className="nz-jogger">Lost data</span>
       </div>
       <p className="nz-why">
-        Delete order <b>12</b> {"\u2014"} Jill Brown{"\u2019"}s only order. Those rows are the only place
+        Delete order <b>12</b> {"-"} Jill Brown{"\u2019"}s only order. Those rows are the only place
         customer C234 and the item {"\u201c"}Sprocket{"\u201d"} (P3) appear, so deleting the order erases
         the customer and the product along with it.
       </p>
@@ -836,7 +921,7 @@ function WhyMode({ onNext }) {
     <div className="nz-panel">
       <p className="nz-why" style={{ marginTop: 0 }}>
         Here{"\u2019"}s the Sales Order data <b>before</b> normalization. Customer and item facts are
-        copied across rows {"\u2014"} notice John Smith repeated on three lines. Trigger each anomaly to
+        copied across rows {"-"} notice John Smith repeated on three lines. Trigger each anomaly to
         see what breaks; these three problems are exactly what UNF {"\u2192"} 3NF removes.
       </p>
 
@@ -860,13 +945,13 @@ function WhyMode({ onNext }) {
             {active === "insert" && (
               <tr className="ghost">
                 <td className="flag">null?</td>
-                <td>{"\u2014"}</td>
-                <td>{"\u2014"}</td>
-                <td>{"\u2014"}</td>
-                <td>{"\u2014"}</td>
+                <td>{"-"}</td>
+                <td>{"-"}</td>
+                <td>{"-"}</td>
+                <td>{"-"}</td>
                 <td>P4</td>
                 <td>Flange</td>
-                <td>{"\u2014"}</td>
+                <td>{"-"}</td>
               </tr>
             )}
           </tbody>
@@ -957,7 +1042,7 @@ function WatchMode() {
         </div>
         <p className="nz-why">{s.why}</p>
         {last && (
-          <FinalChecklist nextLabel="link the four tables on their shared keys, drop redundant links, then add cardinalities and optionalities to build the ER diagram \u2014 the procedure in the worked Order example." />
+          <FinalChecklist nextLabel="link the four tables on their shared keys, drop redundant links, then add cardinalities and optionalities to build the ER diagram - the procedure in the worked Order example." />
         )}
       </div>
       <SourceDoc kind="order" />
@@ -1111,20 +1196,185 @@ function PracticeMode() {
   );
 }
 
+/* ==================== ER DIAGRAM MODE ==================== */
+
+function ErBox({ b, highlightShared }) {
+  const titleH = 26;
+  const lineH = 20;
+  const padTop = 6;
+  const h = titleH + b.attrs.length * lineH + 8;
+  return (
+    <g>
+      <rect x={b.x} y={b.y} width={b.w} height={h} fill="#fff" stroke="#6b4e71" strokeWidth="1.5" />
+      <rect x={b.x} y={b.y} width={b.w} height={titleH} fill="#6b4e71" />
+      <text x={b.x + 10} y={b.y + 18} fill="#fff" fontSize="13" fontWeight="700">
+        {b.title}
+      </text>
+      {b.attrs.map((a, i) => {
+        const ty = b.y + titleH + padTop + i * lineH + 11;
+        const sh = highlightShared && a.shared;
+        return (
+          <g key={i}>
+            {sh && <rect x={b.x + 4} y={ty - 13} width={b.w - 8} height="18" rx="3" fill="#fbf3df" />}
+            <text
+              x={b.x + 10}
+              y={ty}
+              fill="#1c2230"
+              fontSize="12"
+              fontFamily="ui-monospace, Menlo, monospace"
+              style={a.pk ? { textDecoration: "underline" } : undefined}
+            >
+              {a.t}
+              {a.fk ? "  (FK)" : ""}
+            </text>
+          </g>
+        );
+      })}
+    </g>
+  );
+}
+
+function ErLinks({ showNotation }) {
+  const S = "#4a3450";
+  return (
+    <g stroke={S} strokeWidth="1.6" fill="none">
+      <line x1="132.5" y1="118" x2="132.5" y2="300" />
+      <line x1="547.5" y1="98" x2="547.5" y2="300" />
+      <line x1="225" y1="347" x2="455" y2="347" />
+      {showNotation && (
+        <>
+          <line x1="124.5" y1="128" x2="140.5" y2="128" />
+          <line x1="539.5" y1="108" x2="555.5" y2="108" />
+          <line x1="235" y1="339" x2="235" y2="355" />
+          <line x1="132.5" y1="283" x2="116.5" y2="300" />
+          <line x1="132.5" y1="283" x2="132.5" y2="300" />
+          <line x1="132.5" y1="283" x2="148.5" y2="300" />
+          <line x1="547.5" y1="283" x2="531.5" y2="300" />
+          <line x1="547.5" y1="283" x2="547.5" y2="300" />
+          <line x1="547.5" y1="283" x2="563.5" y2="300" />
+          <line x1="438" y1="347" x2="455" y2="331" />
+          <line x1="438" y1="347" x2="455" y2="347" />
+          <line x1="438" y1="347" x2="455" y2="363" />
+          <circle cx="132.5" cy="274" r="4" fill="#fff" />
+          <circle cx="547.5" cy="274" r="4" fill="#fff" />
+          <circle cx="446" cy="347" r="4" fill="#fff" />
+        </>
+      )}
+    </g>
+  );
+}
+
+function ErDiagram({ stage }) {
+  return (
+    <svg
+      viewBox="0 0 660 405"
+      xmlns="http://www.w3.org/2000/svg"
+      role="img"
+      aria-label="Entity relationship diagram for the Order example"
+    >
+      {stage.showLinks && <ErLinks showNotation={stage.showNotation} />}
+      {erBoxes.map((b) => (
+        <ErBox key={b.id} b={b} highlightShared={stage.highlightShared} />
+      ))}
+      {stage.showNotation && (
+        <g fill="#1c2230" fontSize="11.5" fontStyle="italic">
+          <text x="140" y="212">orders</text>
+          <text x="556" y="202">is ordered as</text>
+          <rect x="306" y="330" width="66" height="16" fill="#fcfbfd" />
+          <text x="339" y="342" textAnchor="middle">contains</text>
+        </g>
+      )}
+    </svg>
+  );
+}
+
+function ErMode() {
+  const stages = erStages;
+  const [step, setStep] = useState(0);
+  const [maxReached, setMax] = useState(0);
+  const last = step === stages.length - 1;
+  const s = stages[step];
+  const jump = (i) => i <= maxReached && setStep(i);
+  const next = () => {
+    const n = step + 1;
+    setStep(n);
+    setMax((m) => Math.max(m, n));
+  };
+
+  return (
+    <div className="nz-panel">
+      <div className="nz-ersteps">
+        {stages.map((st, i) => (
+          <button
+            key={st.key}
+            className={`nz-erchip${i === step ? " active" : i <= maxReached ? " done" : ""}`}
+            disabled={i > maxReached}
+            onClick={() => jump(i)}
+          >
+            {st.key}
+          </button>
+        ))}
+      </div>
+
+      <div className="nz-erwrap">
+        <ErDiagram stage={s} />
+      </div>
+
+      {s.showNotation && (
+        <div className="nz-erlegend">
+          <span>Bar = one</span>
+          <span>Crow{"\u2019"}s foot = many</span>
+          <span>Circle = optional</span>
+        </div>
+      )}
+
+      <div className="nz-nav">
+        <button className="nz-btn ghost" disabled={step === 0} onClick={() => jump(step - 1)}>
+          {"\u2190"} Back
+        </button>
+        {!last ? (
+          <button className="nz-btn cta" onClick={next}>
+            Next {"\u2192"}
+          </button>
+        ) : (
+          <button
+            className="nz-btn"
+            onClick={() => {
+              setStep(0);
+              setMax(0);
+            }}
+          >
+            {"\u21ba"} Start over
+          </button>
+        )}
+      </div>
+
+      <div className="nz-explain">
+        <div className="nz-stagehead">
+          <h3 className="nz-stagetitle">{s.title}</h3>
+        </div>
+        <p className="nz-why">{s.why}</p>
+      </div>
+    </div>
+  );
+}
+
 /* ============================ ROOT ============================ */
 
 const MODES = [
   { id: "why", label: "Why normalize?" },
   { id: "watch", label: "Watch the process" },
   { id: "practice", label: "Try it yourself" },
+  { id: "er", label: "Build the ER diagram" },
 ];
 
 const MODE_NOTE = {
-  why: "The Sales Order data before normalization. Trigger each anomaly to see what breaks \u2014 the problems normalization exists to fix.",
+  why: "The Sales Order data before normalization. Trigger each anomaly to see what breaks: the problems normalization exists to fix.",
   watch:
     "Worked example: a Sales Order document. Step right through each column and read why each attribute moves.",
   practice:
-    "Exercise: the student transcript document. Make the call for each column \u2014 it unlocks once you get it right (or hit \u201cShow answer\u201d).",
+    "Exercise: the student transcript document. Make the call for each column. It unlocks once you get it right (or hit \u201cShow answer\u201d).",
+  er: "From the four 3NF tables of the Order example, build the entity-relationship diagram step by step in crow\u2019s foot notation.",
 };
 
 export default function NormalizationTutorial() {
@@ -1160,6 +1410,7 @@ export default function NormalizationTutorial() {
         {mode === "why" && <WhyMode onNext={() => setMode("watch")} />}
         {mode === "watch" && <WatchMode />}
         {mode === "practice" && <PracticeMode />}
+        {mode === "er" && <ErMode />}
       </div>
     </div>
   );
